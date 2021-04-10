@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# A necessary libraries 
 import itertools
 import re
 from logging import getLogger
@@ -20,6 +22,7 @@ from collections import namedtuple, defaultdict
 
 import numpy as np
 import nltk
+import datetime
 
 from deeppavlov.core.common.registry import register
 from deeppavlov.models.kbqa.wiki_parser import WikiParser
@@ -30,14 +33,29 @@ from deeppavlov.models.kbqa.utils import \
 from deeppavlov.models.kbqa.query_generator_base import QueryGeneratorBase
 
 log = getLogger(__name__)
-
+"""
+        The class QueryGeneratorBase takes as input entity substrings, defines the template of the query and
+        fills the slots of the template with candidate entities and relations.
+"""
 
 @register('query_generator')
-class QueryGenerator(QueryGeneratorBase):
-    """
-        Class for query generation using Wikidata hdt file
-    """
 
+
+ """
+    Class for query generation using Wikidata hdt file
+ """
+class QueryGenerator(QueryGeneratorBase):
+ """   
+    Args:	
+            wiki_parser: component deeppavlov.models.kbqa.wiki_parser	
+            rel_ranker: component deeppavlov.models.kbqa.rel_ranking_infer	
+            entities_to_leave: how many entities to leave after entity linking	
+            rels_to_leave: how many relations to leave after relation ranking	
+            max_comb_num: the maximum number of combinations of candidate entities and relations	
+            return_all_possible_answers: whether to return all found answers	
+            return_answers: whether to return answers or candidate answers	
+            **kwargs:	
+ """
     def __init__(self, wiki_parser: WikiParser,
                  rel_ranker: Union[RelRankerInfer, RelRankerBertInfer],
                  entities_to_leave: int = 5,
@@ -45,18 +63,7 @@ class QueryGenerator(QueryGeneratorBase):
                  max_comb_num: int = 10000,
                  return_all_possible_answers: bool = False,
                  return_answers: bool = False, *args, **kwargs) -> None:
-        """
-
-        Args:
-            wiki_parser: component deeppavlov.models.kbqa.wiki_parser
-            rel_ranker: component deeppavlov.models.kbqa.rel_ranking_infer
-            entities_to_leave: how many entities to leave after entity linking
-            rels_to_leave: how many relations to leave after relation ranking
-            max_comb_num: the maximum number of combinations of candidate entities and relations
-            return_all_possible_answers: whether to return all found answers
-            return_answers: whether to return answers or candidate answers
-            **kwargs:
-        """
+  
         self.wiki_parser = wiki_parser
         self.rel_ranker = rel_ranker
         self.entities_to_leave = entities_to_leave
@@ -75,12 +82,14 @@ class QueryGenerator(QueryGeneratorBase):
                  template_type_batch: Union[List[List[str]], List[str]],
                  entities_from_ner_batch: List[List[str]],
                  types_from_ner_batch: List[List[str]]) -> List[Union[List[Tuple[str, Any]], List[str]]]:
+        
 
         candidate_outputs_batch = []
         template_answers_batch = []
         for question, question_sanitized, template_type, entities_from_ner, types_from_ner in \
                 zip(question_batch, question_san_batch, template_type_batch,
                     entities_from_ner_batch, types_from_ner_batch):
+            
             candidate_outputs, template_answer = self.find_candidate_answers(question, question_sanitized,
                                                                              template_type, entities_from_ner,
                                                                              types_from_ner)
@@ -161,7 +170,7 @@ class QueryGenerator(QueryGeneratorBase):
             filter_info.append((unk_prop, prop_type))
         log.debug(f"(query_parser)filter_from_query: {filter_from_query}")
         rel_combs = make_combs(rels, permut=False)
-        import datetime
+        
         start_time = datetime.datetime.now()
         entity_positions, type_positions = [elem.split('_') for elem in entities_and_types_select.split(' ')]
         log.debug(f"entity_positions {entity_positions}, type_positions {type_positions}")
